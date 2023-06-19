@@ -1,42 +1,51 @@
-import Mathlib.Data.Finset.Basic
-import Mathlib.Data.Finset.Card
+import Mathlib.Data.Set.Basic
+import Mathlib.Data.Set.Finite
+import Mathlib.Data.Set.NCard
+import Mathlib.Tactic.Linarith
 
 
+-- Note: DecidableEq is required in order to automatically infer `Finset` for
+-- set literals.
 inductive Weekday where
   | monday
   | tuesday
   | wednesday
   | thursday
   | friday
-  deriving Repr
+  deriving Repr, DecidableEq
 
 open Weekday
 
-def numberOfDay (d : Weekday) : Nat :=
-  match d with
-    | monday => 1
-    | tuesday => 2
-    | wednesday => 3
-    | thursday => 4
-    | friday => 5
+example : Finset Weekday := {tuesday}
+example : Finset Weekday := {monday, tuesday}  -- requires `DecidableEq` to type check
 
-open Function
+def all_weekdays : Finset Weekday := {monday, tuesday, wednesday, thursday, friday}
+theorem all_weekdays_complete : ∀ x : Weekday, x ∈ all_weekdays := by
+  intro x
+  cases x <;> simp
+theorem all_weekdays_card : all_weekdays.card = 5 := rfl
 
-theorem number_of_day_inj : Injective (numberOfDay : Weekday → Nat) := by
-  intro x y h
-  admit
-
--- TODO: need instance of Fintype?
--- def all_weekdays : Finset Weekday := Finset.univ _
-
--- RTO choice is valid if it has at least 3 weekdays
-def rto_valid (c : Finset Weekday) : Prop := 3 ≤ c.card
+instance : Fintype Weekday where
+  elems := all_weekdays
+  complete := all_weekdays_complete
 
 -- Every pair of two valid RTO choices shares at least one day in common
-theorem rto_collision (c₁ c₂ : Finset Weekday) (h₁ : rto_valid c₁) (h₂ : rto_valid c₂) :
+theorem rto_collision (c₁ c₂ : Finset Weekday) (h₁ : 3 ≤ c₁.card) (h₂ : 3 ≤ c₂.card) :
   ∃ d : Weekday, d ∈ c₁ ∧ d ∈ c₂ := by
   by_contra' h
   have hd : Disjoint c₁ c₂ := Finset.disjoint_left.mpr h
-  let cc : Finset Weekday := Finset.disjUnion c₁ c₂ hd
-  -- claim: cc ⊆ univ, cc.card = 3 + 3 = 6, univ.card = 5, cc.card ≤ univ.card, 6 ≤ 5
-  admit
+  let cc : Finset Weekday := c₁ ∪ c₂
+  have hcc_card : cc.card ≥ 6 := by
+    calc
+      Finset.card cc = Finset.card c₁ + Finset.card c₂ := Finset.card_disjoint_union hd
+      _              ≥ 6 := by linarith
+  have hcu : cc ⊆ all_weekdays := by
+    intro a _
+    exact (Fintype.complete a)
+  have _ : cc.card ≤ all_weekdays.card := Finset.card_le_of_subset hcu
+  have _ : 6 ≤ 5 := by
+    calc
+      6 ≤ cc.card := ge_iff_le.mp hcc_card
+      _ ≤ all_weekdays.card := by assumption
+      _ = 5 := all_weekdays_card
+  contradiction
