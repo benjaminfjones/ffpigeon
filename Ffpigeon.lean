@@ -1,6 +1,6 @@
-import Mathlib.Data.Set.Basic
-import Mathlib.Data.Set.Finite
-import Mathlib.Data.Set.NCard
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Basic
 import Mathlib.Tactic.Linarith
 
 
@@ -39,9 +39,7 @@ theorem rto_collision (c₁ c₂ : Finset Weekday) (h₁ : 3 ≤ c₁.card) (h�
     calc
       Finset.card cc = Finset.card c₁ + Finset.card c₂ := Finset.card_disjoint_union hd
       _              ≥ 6 := by linarith
-  have hcu : cc ⊆ all_weekdays := by
-    intro a _
-    exact (Fintype.complete a)
+  have hcu : cc ⊆ all_weekdays := Finset.subset_univ cc
   have _ : cc.card ≤ all_weekdays.card := Finset.card_le_of_subset hcu
   have _ : 6 ≤ 5 := by
     calc
